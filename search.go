@@ -11,7 +11,23 @@ import (
 
 // ApiResponse represents the top-level response from Amadeus API
 type ApiResponse struct {
-  Data []flight `json:"data"`
+  Data []Flight `json:"data"`
+}
+
+// flight represents data about a flight
+type Flight struct {
+    Origin string `json:"origin"`
+    Destination string `json:"destination"`
+    DepartureDate string `json:"departureDate"`
+    Price Price `json:"price"`
+    Links Links `json:"links"`
+}
+
+// Links represents the two links contained inside Data (Flight).
+// They have important information about each flight
+type Links struct {
+    FlightDates string `json:"flightDates"`
+    FlightOffers string `json:"flightOffers"`
 }
 
 // Price represents the price information of a flight
@@ -19,11 +35,12 @@ type Price struct {
     Total string `json:"total"`
 }
 
-// flight represents data about a flight
-type flight struct {
+// FormattedFlight represents data about a flight to respond with
+type FormattedFlight struct {
     Origin string `json:"origin"`
     Destination string `json:"destination"`
-    Price Price `json:"price"`
+    Price string `json:"price"`
+    FlightOffers string `json:flightOffers`
 }
 
 const (
@@ -38,8 +55,6 @@ func getFlights(c *gin.Context) {
         fmt.Errorf("Error getting Auth Token: %d\n", err)
         return
     }
-
-    fmt.Println("Access Token from getFlights(): ", auth_token.AccessToken)
 
     // origin is obtained from query
     origin := c.Param("origin")
@@ -86,5 +101,25 @@ func getFlights(c *gin.Context) {
         return
     }
 
-    c.IndentedJSON(http.StatusFound, response.Data)
+    // Prepare JSON to show
+    var flights = []FormattedFlight{}
+    var newflight FormattedFlight 
+
+    for _, value := range response.Data {
+        newflight.Origin = value.Origin
+        newflight.Destination = value.Destination
+        newflight.Price = value.Price.Total
+        newflight.FlightOffers = value.Links.FlightOffers
+
+        // Need the additional info 
+        // get_info()
+
+        flights = append(flights, newflight)
+    }
+
+    // c.IndentedJSON(http.StatusFound, response.Data)
+    c.IndentedJSON(http.StatusFound, flights)
+}
+
+func getInfo(c *gin.Context) {
 }

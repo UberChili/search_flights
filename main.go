@@ -44,10 +44,6 @@ func main() {
 func getAuthToken() (AuthToken, error) {
     var API_KEY = os.Getenv("AMAD_API_KEY")
     var SECRET = os.Getenv("AMAD_API_SECRET")
-
-    fmt.Println("API_KEY: ", API_KEY)
-    fmt.Println("API_SECRET: ", SECRET)
-
     var authToken AuthToken
 
     data :="grant_type=client_credentials&client_id=" + API_KEY + "&client_secret=" + SECRET
@@ -72,7 +68,6 @@ func getAuthToken() (AuthToken, error) {
         return authToken, err
     }
 
-    fmt.Println("Access Token from getAuthToken(): ", authToken.AccessToken)
     // c.IndentedJSON(http.StatusOK, authToken)
     return authToken, nil
 }
