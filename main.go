@@ -27,7 +27,7 @@ type AuthToken struct {
 
 func main() {
     router := gin.Default()
-    router.GET("/flights/:origin", getFlights)
+    router.GET("/flights/:origin/:destination", getFlights)
 
     router.Run("localhost:8080")
 }

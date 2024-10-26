@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -80,7 +81,12 @@ func getFlights(c *gin.Context) {
 
     // Use origin from the query and make request
     origin := c.Param("origin")
-    resp, err := makeAmadeusRequest(authToken, origin)
+    destination := c.Param("destination")
+
+    // Get tomorrow's date in the required format (YYYY-MM-DD)
+    tomorrow := time.Now().AddDate(0, 0, 1).Format("2006-01-02")
+
+    resp, err := makeAmadeusRequest(authToken, origin, destination, tomorrow)
     if err != nil {
         respondWithError(c, http.StatusInternalServerError, "Error making request to Amadeus API")
         return
@@ -125,9 +131,8 @@ func simplifyFlights(flights ApiResponse) []SimplifiedFlight {
 }
 
 // Helper function that performs the actual calls to the API
-func makeAmadeusRequest(authToken AuthToken, origin string) (*http.Response, error) {
-    // req, err := http.NewRequest("GET", fmt.Sprintf("%s?origin=%s&maxPrice=200", baseURL, origin), nil)
-    req, err := http.NewRequest("GET", fmt.Sprintf("%s?originLocationCode=%s&destinationLocationCode=%s&departureDate=%s&adults=1", baseURL, origin, "BKK", "2024-10-27"), nil)
+func makeAmadeusRequest(authToken AuthToken, origin string, destination string, tomorrow string) (*http.Response, error) {
+    req, err := http.NewRequest("GET", fmt.Sprintf("%s?originLocationCode=%s&destinationLocationCode=%s&departureDate=%s&adults=1", baseURL, origin, destination, tomorrow), nil)
     if err != nil {
         return nil, err
     }
