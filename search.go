@@ -16,6 +16,7 @@ type ApiResponse struct {
 
 // Flight contains information about a flight, it depends on other structs
 type Flight struct {
+    Id string `json:"id"`
     Itineraries []struct {
         Segments []struct {
             Departure struct {
@@ -49,6 +50,7 @@ type Location struct {
 
 // Auxiliary struct to nicely format our output
 type SimplifiedFlight struct {
+    Id string `json:"id"`
     Origin struct {
         Code    string `json:"code"`
         Country string `json:"country"`
@@ -64,7 +66,7 @@ type SimplifiedFlight struct {
 
 const (
     // baseURL = "https://test.api.amadeus.com/v1/shopping/flight-destinations"
-    // Was wrongly using the above url for hours, making everything more difficult. Correct URL is the following:
+    // Was wrongly using the above url for hours, making everything more difficult. The (more) correct URL is the following:
     baseURL = "https://test.api.amadeus.com/v2/shopping/flight-offers"
 )
 
@@ -104,6 +106,7 @@ func simplifyFlights(flights ApiResponse) []SimplifiedFlight {
         segment := flight.Itineraries[0].Segments[0]
         simplified := SimplifiedFlight {
             Price: flight.Price,
+            Id: flight.Id,
         }
 
         // Set origin
