@@ -26,14 +26,6 @@ type AuthToken struct {
 
 
 func main() {
-    // my_auth_token, _ := getAuthToken()
-    //
-    // fmt.Println(my_auth_token.Type)
-    // fmt.Println(my_auth_token.Username)
-    // fmt.Println(my_auth_token.Client_id)
-    // fmt.Println(my_auth_token.TokenType)
-    // fmt.Println(my_auth_token.AccessToken)
-
     router := gin.Default()
     router.GET("/flights/:origin", getFlights)
 

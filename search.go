@@ -3,44 +3,52 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
-// ApiResponse represents the top-level response from Amadeus API
 type ApiResponse struct {
   Data []Flight `json:"data"`
 }
 
-// flight represents data about a flight
+// flight represents data about a flight gotten from the API
+// This worked
+// type Flight struct {
+//     Origin string `json:"origin"`
+//     Destination string `json:"destination"`
+//     DepartureDate string `json:"departureDate"`
+//     Price Price `json:"price"`
+//     Links Links `json:"links"`
+// }
+
 type Flight struct {
     Origin string `json:"origin"`
     Destination string `json:"destination"`
     DepartureDate string `json:"departureDate"`
     Price Price `json:"price"`
     Links Links `json:"links"`
+    // FlightDates string `json:"flightDates"`
+    // FlightOffers string `json:"flightOffers"`
 }
 
-// Links represents the two links contained inside Data (Flight).
-// They have important information about each flight
-type Links struct {
-    FlightDates string `json:"flightDates"`
-    FlightOffers string `json:"flightOffers"`
-}
+// Helper that represents data about a flight to respond with
+// type FormattedFlight struct {
+//     Origin string `json:"origin"`
+//     Destination string `json:"destination"`
+//     Price string `json:"price"`
+//     FlightDates string `json:"flightDates"`
+//     FlightOffers string `json:"flightOffers"`
+// }
 
-// Price represents the price information of a flight
+// Price contains the actual field we want (total)
 type Price struct {
     Total string `json:"total"`
 }
 
-// FormattedFlight represents data about a flight to respond with
-type FormattedFlight struct {
-    Origin string `json:"origin"`
-    Destination string `json:"destination"`
-    Price string `json:"price"`
-    FlightOffers string `json:flightOffers`
+type Links struct {
+    FlightDates string `json:"flightDates"`
+    FlightOffers string `json:"flightOffers"`
 }
 
 const (
@@ -49,77 +57,74 @@ const (
 
 // getFlights responds with the list of all flights from a destination as JSON
 func getFlights(c *gin.Context) {
-    // Need AuthToken authorization
-    auth_token, err := getAuthToken()
+    authToken, err := getAuthToken()
     if err != nil {
-        fmt.Errorf("Error getting Auth Token: %d\n", err)
+        respondWithError(c, http.StatusUnauthorized, "Error getting Auth Token")
         return
     }
 
-    // origin is obtained from query
+    // Use origin from the query and make request
     origin := c.Param("origin")
-
-    // Create the request
-    req, err := http. NewRequest("GET", fmt.Sprintf("%s?origin=%s&maxPrice=200", baseURL, origin), nil)
+    resp, err := makeAmadeusRequest(authToken, origin)
     if err != nil {
-        c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-        // Should generally use c.JSON() in most cases as it is less resources heavy
-        // c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-        return
-    }
-
-    // Add headers 
-    var full_access_token = "Bearer " + auth_token.AccessToken
-    req.Header.Add("Authorization", full_access_token)
-
-    // Make the request
-    client := &http.Client{}
-    resp, err := client.Do(req)
-    if err != nil {
-        c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        respondWithError(c, http.StatusInternalServerError, "Error making request to Amadeus API")
         return
     }
     defer resp.Body.Close()
 
-    // Read response Body 
-    body, err := io.ReadAll(resp.Body)
-    if err != nil {
-        c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-        return
-    }
-
-    // Check if the response was successful
-    if resp.StatusCode != http.StatusOK {
-        c.IndentedJSON(resp.StatusCode, gin.H{"error": string(body)})
-        return
-    }
-
-    // Parse the JSON response
     var response ApiResponse
-    if err := json.Unmarshal(body, &response); err != nil {
-        c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse response: " + err.Error()})
+    if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+        respondWithError(c, http.StatusInternalServerError, "Failed to parse API response")
         return
     }
 
-    // Prepare JSON to show
-    var flights = []FormattedFlight{}
-    var newflight FormattedFlight 
+    // formattedFlights := formatFlights(response.Data)
+    // c.IndentedJSON(http.StatusOK, formattedFlights)
 
-    for _, value := range response.Data {
-        newflight.Origin = value.Origin
-        newflight.Destination = value.Destination
-        newflight.Price = value.Price.Total
-        newflight.FlightOffers = value.Links.FlightOffers
-
-        // Need the additional info 
-        // get_info()
-
-        flights = append(flights, newflight)
-    }
-
-    // c.IndentedJSON(http.StatusFound, response.Data)
-    c.IndentedJSON(http.StatusFound, flights)
+    // trying to deserialize directly
+    actualFlights := formatFlights(response.Data)
+    c.IndentedJSON(http.StatusOK, actualFlights)
 }
 
-func getInfo(c *gin.Context) {
+func formatFlights(flights []Flight) []Flight {
+    actual_flights := make([]Flight, len(flights))
+    for i, flight := range flights {
+        actual_flights[i] = Flight{
+            Origin: flight.Origin,
+            Destination: flight.Destination,
+            Price: flight.Price,
+            Links: flight.Links,
+        }
+    }
+    return actual_flights
+}
+
+// Actually calls the API
+func makeAmadeusRequest(authToken AuthToken, origin string) (*http.Response, error) {
+    req, err := http.NewRequest("GET", fmt.Sprintf("%s?origin=%s&maxPrice=200", baseURL, origin), nil)
+    if err != nil {
+        return nil, err
+    }
+    req.Header.Set("Authorization", "Bearer " + authToken.AccessToken)
+    client := &http.Client{}
+    return client.Do(req)
+}
+
+// Formats the flights structs
+// func formatFlights(flights []Flight) []FormattedFlight {
+//     formatted := make([]FormattedFlight, len(flights))
+//     for i, flight := range flights {
+//         formatted[i] = FormattedFlight{
+//             Origin: flight.Origin,
+//             Price: flight.Price.Total,
+//             FlightDates: flight.Links.FlightDates,
+//             FlightOffers: flight.Links.FlightOffers,
+//         }
+//     }
+//     return formatted
+// }
+
+// Helps avoid repetitive error-handling code
+func respondWithError(c *gin.Context, status int, message string) {
+    c.IndentedJSON(status, gin.H{"error": message})
 }
