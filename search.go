@@ -12,40 +12,20 @@ type ApiResponse struct {
   Data []Flight `json:"data"`
 }
 
-// flight represents data about a flight gotten from the API
-// This worked
-// type Flight struct {
-//     Origin string `json:"origin"`
-//     Destination string `json:"destination"`
-//     DepartureDate string `json:"departureDate"`
-//     Price Price `json:"price"`
-//     Links Links `json:"links"`
-// }
-
+// Flight contains main information about a Flight
 type Flight struct {
     Origin string `json:"origin"`
     Destination string `json:"destination"`
-    DepartureDate string `json:"departureDate"`
     Price Price `json:"price"`
     Links Links `json:"links"`
-    // FlightDates string `json:"flightDates"`
-    // FlightOffers string `json:"flightOffers"`
 }
-
-// Helper that represents data about a flight to respond with
-// type FormattedFlight struct {
-//     Origin string `json:"origin"`
-//     Destination string `json:"destination"`
-//     Price string `json:"price"`
-//     FlightDates string `json:"flightDates"`
-//     FlightOffers string `json:"flightOffers"`
-// }
 
 // Price contains the actual field we want (total)
 type Price struct {
     Total string `json:"total"`
 }
 
+// Links we need to call in order to get additional information 
 type Links struct {
     FlightDates string `json:"flightDates"`
     FlightOffers string `json:"flightOffers"`
@@ -78,25 +58,7 @@ func getFlights(c *gin.Context) {
         return
     }
 
-    // formattedFlights := formatFlights(response.Data)
-    // c.IndentedJSON(http.StatusOK, formattedFlights)
-
-    // trying to deserialize directly
-    actualFlights := formatFlights(response.Data)
-    c.IndentedJSON(http.StatusOK, actualFlights)
-}
-
-func formatFlights(flights []Flight) []Flight {
-    actual_flights := make([]Flight, len(flights))
-    for i, flight := range flights {
-        actual_flights[i] = Flight{
-            Origin: flight.Origin,
-            Destination: flight.Destination,
-            Price: flight.Price,
-            Links: flight.Links,
-        }
-    }
-    return actual_flights
+    c.IndentedJSON(http.StatusOK, response)
 }
 
 // Actually calls the API
@@ -109,20 +71,6 @@ func makeAmadeusRequest(authToken AuthToken, origin string) (*http.Response, err
     client := &http.Client{}
     return client.Do(req)
 }
-
-// Formats the flights structs
-// func formatFlights(flights []Flight) []FormattedFlight {
-//     formatted := make([]FormattedFlight, len(flights))
-//     for i, flight := range flights {
-//         formatted[i] = FormattedFlight{
-//             Origin: flight.Origin,
-//             Price: flight.Price.Total,
-//             FlightDates: flight.Links.FlightDates,
-//             FlightOffers: flight.Links.FlightOffers,
-//         }
-//     }
-//     return formatted
-// }
 
 // Helps avoid repetitive error-handling code
 func respondWithError(c *gin.Context, status int, message string) {
