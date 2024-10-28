@@ -132,7 +132,9 @@ func simplifyFlights(flights ApiResponse) []SimplifiedFlight {
 
 // Helper function that performs the actual calls to the API
 func makeAmadeusRequest(authToken AuthToken, origin string, destination string, tomorrow string) (*http.Response, error) {
-    req, err := http.NewRequest("GET", fmt.Sprintf("%s?originLocationCode=%s&destinationLocationCode=%s&departureDate=%s&adults=1", baseURL, origin, destination, tomorrow), nil)
+    req, err := http.NewRequest("GET", fmt.Sprintf(
+        "%s?originLocationCode=%s&destinationLocationCode=%s&departureDate=%s&adults=1&currencyCode=%s",
+        baseURL, origin, destination, tomorrow, "USD"), nil)
     if err != nil {
         return nil, err
     }
