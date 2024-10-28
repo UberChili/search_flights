@@ -18,22 +18,34 @@ type ApiResponse struct {
 // Flight contains information about a flight, it depends on other structs
 type Flight struct {
     Id string `json:"id"`
-    Itineraries []struct {
-        Segments []struct {
-            Departure struct {
-                IataCode string `json:"iataCode"`
-            } `json:"departure"`
-            Arrival struct {
-                IataCode string `json:"iataCode"`
-            } `json:"arrival"`
-            CarrierCode string `json:"carrierCode"`
-            Number      string `json:"number"`
-        } `json:"segments"`
-    } `json:"itineraries"`
+    Itineraries []Itinerary `json:"itineraries"`
     Price Price `json:"price"`
 }
 
-// Price contains the actual field we want (total)
+// List of flight segments
+type Itinerary struct {
+    Segments []Segment `json:"segments"`
+}
+
+// Flight segment
+type Segment struct {
+    Departure Departure `json:"departure"`
+    Arrival Arrival `json:"arrival"`
+    CarrierCode string `json:"carrierCode"`
+    Number string `json:"number"`
+}
+
+// Code that identifies airports
+type Departure struct {
+    IataCode string `json:"iataCode"`
+}
+
+// Arrival airport code
+type Arrival struct {
+    IataCode string `json:"iataCode"`
+}
+
+// Contains the actual field we want (total)
 type Price struct {
     Currency string `json:"currency"`
     Total string `json:"total"`
